@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
+import android.location.Location;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.ResultReceiver;
@@ -32,7 +33,8 @@ public class MyIntentService extends IntentService {
 
 
     public static final int GEOFENCE_NOTIFICATION_ID = 0;
-
+    private Location triggerLocation;
+    private int id=-1;
     public MyIntentService() {
         super("MyIntentService");
     }
@@ -71,6 +73,7 @@ public class MyIntentService extends IntentService {
         if (geoFenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER ||
                 geoFenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
             // Get the geofence that were triggered
+             //triggerLocation= geofencingEvent.getTriggeringLocation();
             List<Geofence> triggeringGeofences = geofencingEvent.getTriggeringGeofences();
             // Create a detail message with Geofences received
             String geofenceTransitionDetails = getGeofenceTrasitionDetails(geoFenceTransition, triggeringGeofences);
@@ -86,9 +89,20 @@ public class MyIntentService extends IntentService {
         // get the ID of each geofence triggered
         ArrayList<String> triggeringGeofencesList = new ArrayList<>();
         for (Geofence geofence : triggeringGeofences) {
-            triggeringGeofencesList.add(geofence.getRequestId());
-        }
+           triggeringGeofencesList.add(geofence.getRequestId());
+       }
+    for(int i=0;i<triggeringGeofencesList.size();i++)
+        {
+            if(triggeringGeofences.get(i).getRequestId().equals("BLUE"))
+               id=R.raw.blue;
+            else
+            if(triggeringGeofences.get(i).getRequestId().equals("RAMALLAH"))
+                id=R.raw.ramallah;
+            else
+            if(triggeringGeofences.get(i).getRequestId().equals("RAFEDIA"))
+                id=R.raw.rafedia;
 
+        }
         String status = null;
         if (geoFenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER)
             status = "Entering ";
@@ -118,10 +132,8 @@ public class MyIntentService extends IntentService {
                 GEOFENCE_NOTIFICATION_ID,
                 createNotification(msg, notificationPendingIntent));
         Toast.makeText(getApplicationContext(),"DDDDDDDD",Toast.LENGTH_LONG).show();
-        MediaPlayer player = MediaPlayer.create(this, R.raw.mawtini);
-        player.setLooping(false);
-        player.start();
 
+        playMusic();
     }
 
 
@@ -139,5 +151,20 @@ public class MyIntentService extends IntentService {
         return notificationBuilder.build();
     }
 
-
+    private void playMusic(){
+       int audio=-1;
+        if(id==0)
+             audio=R.raw.blue;
+        else
+        if(id==1)
+            audio=R.raw.ramallah;
+        else
+        if(id==2)
+            audio=R.raw.rafedia;
+        if(id!=-1) {
+            MediaPlayer player = MediaPlayer.create(this, audio);
+            player.setLooping(false);
+            player.start();
+        }
+    }
 }

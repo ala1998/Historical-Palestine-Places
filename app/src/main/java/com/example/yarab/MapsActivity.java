@@ -119,8 +119,42 @@ public  class MapsActivity extends FragmentActivity implements OnMapReadyCallbac
         //client.connect();
         // init the geofencingClient
         geofencingClient = LocationServices.getGeofencingClient (this);
+        geofenceList=new ArrayList<>();
+
+
         LatLng blue=new LatLng(31.906051,35.212643);
-        startGeofence(blue);
+        LatLng ramallah=new LatLng(31.906051,35.212643);
+        LatLng rafedia=new LatLng(31.906051,35.212643);
+        Geofence geofence1 =  new Geofence.Builder()
+                .setRequestId("BLUE")
+                .setCircularRegion(blue.latitude,blue.longitude, 700)
+                .setExpirationDuration(Geofence.NEVER_EXPIRE)
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER
+                        | Geofence.GEOFENCE_TRANSITION_EXIT)
+                .build();
+        Geofence geofence2 =  new Geofence.Builder()
+                .setRequestId("RAMALLAH")
+                .setCircularRegion(ramallah.latitude,blue.longitude, 700)
+                .setExpirationDuration(Geofence.NEVER_EXPIRE)
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER
+                        | Geofence.GEOFENCE_TRANSITION_EXIT)
+                .build();
+
+        Geofence geofence3 =  new Geofence.Builder()
+                .setRequestId("RAFEDIA")
+                .setCircularRegion(rafedia.latitude,blue.longitude, 700)
+                .setExpirationDuration(Geofence.NEVER_EXPIRE)
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER
+                        | Geofence.GEOFENCE_TRANSITION_EXIT)
+                .build();
+        geofenceList.add(geofence1);
+        geofenceList.add(geofence2);
+        geofenceList.add(geofence3);
+
+        startGeofence(geofenceList);
+     //   startGeofence(ramallah,2);
+       // startGeofence(rafedia,3);
+
 
         searchView=findViewById(R.id.search);
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
@@ -340,10 +374,10 @@ public  class MapsActivity extends FragmentActivity implements OnMapReadyCallbac
                 .setInterval(50000)
                 .setFastestInterval(10000);
 
-        if (checkPermission()){
-            LocationServices.getFusedLocationProviderClient(this).requestLocationUpdates(locationRequest,createGeofencePendingIntent());
+      //  if (checkPermission()){
+           // LocationServices.getFusedLocationProviderClient(this).requestLocationUpdates(locationRequest,createGeofencePendingIntent());
           //  LocationServices.FusedLocationApi.requestLocationUpdates(client, locationRequest, this);
-        }
+       // }
     }
 
     @Override
@@ -402,7 +436,7 @@ public  class MapsActivity extends FragmentActivity implements OnMapReadyCallbac
      * */
 
     // create geoFence
-    private Geofence createGeofence(LatLng latLng, float radius){
+   /* private Geofence createGeofence(LatLng latLng, float radius){
 
         Geofence geofence =new Geofence.Builder()
                 .setRequestId("My GEO")
@@ -414,13 +448,13 @@ public  class MapsActivity extends FragmentActivity implements OnMapReadyCallbac
        // Toast.makeText(MapsActivity.this,"AAA2222",Toast.LENGTH_LONG).show();
 
         return geofence;
-    }
+    }*/
 
     // create geoFence request
-    private GeofencingRequest createGeoFenceRequest(Geofence geofence){
+    private GeofencingRequest createGeoFenceRequest(ArrayList<Geofence> geofenceList){
         GeofencingRequest geofencingRequest=new GeofencingRequest.Builder()
                 .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
-                .addGeofence(geofence)
+                .addGeofences(geofenceList)
                 .build();
       //  Toast.makeText(MapsActivity.this,"AAA3333",Toast.LENGTH_LONG).show();
 
@@ -429,11 +463,11 @@ public  class MapsActivity extends FragmentActivity implements OnMapReadyCallbac
 
 
     // Add the created GeofenceRequest to the device's monitoring list
-    private void addGeofence(GeofencingRequest request){
+    private void addGeofence(GeofencingRequest request,int id){
         //if(!client.isConnected())
           //  client.connect();
         if (checkPermission()){
-            LocationServices.getGeofencingClient(this).addGeofences(request,createGeofencePendingIntent());
+            LocationServices.getGeofencingClient(this).addGeofences(request,createGeofencePendingIntent(id));
            // Toast.makeText(MapsActivity.this, "AAA4444", Toast.LENGTH_SHORT).show();
        //     LocationServices.GeofencingApi.addGeofences(client,request,createGeofencePendingIntent()).setResultCallback(this);
         }
@@ -477,14 +511,15 @@ public  class MapsActivity extends FragmentActivity implements OnMapReadyCallbac
     }*/
 
     // Start Geofence creation process
-    private void startGeofence(LatLng latLng){
+    private void startGeofence(ArrayList<Geofence> geofenceList ){
 
        // if (geoFenceMarker != null){
 
-        Geofence geofence = createGeofence(latLng, 700);
-            GeofencingRequest geofencingRequest = createGeoFenceRequest(geofence);
-            addGeofence(geofencingRequest);
-        markerForGeo(latLng);
+        //Geofence geofence = createGeofence(latLng, 700);
+            GeofencingRequest geofencingRequest = createGeoFenceRequest(geofenceList);
+            //addGeofences(geofencingRequest,id);
+       // addGeofence(geofencingRequest);
+     //   markerForGeo(latLng);
 
         //  Toast.makeText(getApplicationContext(),"AAAAAAAAA",Toast.LENGTH_LONG).show();
 
@@ -511,21 +546,29 @@ public  class MapsActivity extends FragmentActivity implements OnMapReadyCallbac
      * */
 
     // we use PendingIntent object to call Intent service
-    private PendingIntent createGeofencePendingIntent(){
+    private PendingIntent createGeofencePendingIntent(int id) {
         Log.d("VisitPalestine", "createGeofencePendingIntent");
+        PendingIntent pendingIntent=null;
 
-        if (geoFencePendingIntent != null){
-            return geoFencePendingIntent;
+        if (geoFencePendingIntent != null) {
+            pendingIntent=geoFencePendingIntent;
+
+            return pendingIntent;
+
         }
+                Intent intent = new Intent(MapsActivity.this, MyIntentService.class);
+                pendingIntent = PendingIntent.getService(
+                        this, 0, intent, PendingIntent.FLAG_ONE_SHOT
+                );
 
-        Intent intent = new Intent(MapsActivity.this, MyIntentService.class);
-        PendingIntent pendingIntent=PendingIntent.getService(
-                this, 0, intent, PendingIntent.FLAG_ONE_SHOT
-        );
-       // Toast.makeText(getApplicationContext(),"AAAA5555",Toast.LENGTH_LONG).show();
+
 
         return pendingIntent;
+
     }
+
+        // Toast.makeText(getApplicationContext(),"AAAA5555",Toast.LENGTH_LONG).show();
+
 
     /*
      *
