@@ -118,29 +118,26 @@ public class MyIntentService extends IntentService {
                 GEOFENCE_NOTIFICATION_ID,
                 createNotification(msg, notificationPendingIntent));
         Toast.makeText(getApplicationContext(),"DDDDDDDD",Toast.LENGTH_LONG).show();
-        playMusic();
+        MediaPlayer player = MediaPlayer.create(this, R.raw.mawtini);
+        player.setLooping(false);
+        player.start();
 
     }
 
 
     // Create a notification
-    private Notification createNotification(String msg, PendingIntent notificationPendingIntent) {
+   private Notification createNotification(String msg, PendingIntent notificationPendingIntent) {
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this);
         notificationBuilder
                 .setSmallIcon(R.drawable.ic_my_location)
-                .setColor(Color.RED)
-                .setContentTitle(msg)
-                .setContentText("Geofence Notification!")
+                .setColor(Color.rgb(135,39,154))
+                .setContentTitle("Visit Paletine")
+                .setContentText("There's a historical Place here!")
                 .setContentIntent(notificationPendingIntent)
                 .setDefaults(Notification.DEFAULT_LIGHTS | Notification.DEFAULT_VIBRATE | Notification.DEFAULT_SOUND)
                 .setAutoCancel(true);
         return notificationBuilder.build();
     }
 
-    private void playMusic(){
-        MediaPlayer player = MediaPlayer.create(this, R.raw.mawtini);
-        player.setLooping(false);
-        player.start();
-    }
 
 }

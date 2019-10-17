@@ -19,6 +19,8 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
@@ -29,6 +31,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.RelativeLayout;
+import android.widget.SearchView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -66,10 +69,12 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, LocationListener,
+public  class MapsActivity extends FragmentActivity implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
         GoogleMap.OnMapClickListener, GoogleMap.OnMarkerClickListener, ResultCallback<Status> {
     private GoogleApiClient client;
@@ -80,26 +85,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private Location lastLoc;
     private GeofencingClient geofencingClient;
     private Marker locationMarker, geoFenceMarker;
-
+    private SearchView searchView;
     private Circle geoFenceLimits;
 
     private ArrayList<Geofence> geofenceList;
 
-    private static final int REQ_PERMISSION = 1337;
-
-    // These numbers in mili seconds in extremely low, and should be used only for debug
-    private final int UPDATE_INTERVAL =  3 * 60 * 1000; // 3 minutes
-    private final int FASTEST_INTERVAL = 3 * 60 * 1000; // 3 minutes
 
 
     // For creating GeoFence
-    private static final long GEO_DURATION = 60 * 60 * 1000;
-    private static final String GEOFENCE_REQ_ID = "My Geofence";
-    private static final float GEOFENCE_RADIUS = 500.0f; // in meters
+
 
     // For PendingIntent
     private PendingIntent geoFencePendingIntent;
-    private final int GEOFENCE_REQ_CODE = 0;
         private FusedLocationProviderClient locClient;
         private View mView;
 
@@ -122,9 +119,49 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         //client.connect();
         // init the geofencingClient
         geofencingClient = LocationServices.getGeofencingClient (this);
-        startGeofence();
+        LatLng blue=new LatLng(31.906051,35.212643);
+        startGeofence(blue);
 
-    }// end of onCreate ..
+        searchView=findViewById(R.id.search);
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                String location=searchView.getQuery().toString();
+                List<Address> list;
+                if(location!=null && !location.isEmpty()){
+                    Geocoder geocoder=new Geocoder(MapsActivity.this);
+                    try {
+                        list=geocoder.getFromLocationName(location,1);
+                        Address address=list.get(0);
+                        LatLng latLng=new LatLng(address.getLatitude(),address.getLongitude());
+                        mMap.addMarker(new MarkerOptions().position(latLng).title(location));
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng,10));
+                       markerForGeo(latLng);
+
+                        //startGeofence(latLng.latitude,latLng.longitude);
+                        //               geo.addNewGeo(latLng);
+                        //             geo.registerAllGeos();
+                     /*   String s="";
+                        for(int i=0;i<geo.getMyGeos().size();i++)
+                        {
+                            s+=geo.getMyGeos().get(i).getRequestId()+"\t";
+                        }
+                        Toast.makeText(MapsActivity.this,s,Toast.LENGTH_LONG).show();*/
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+                return false;            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                return false;
+            }
+        });
+        mapFragment.getMapAsync(this);
+
+    }
 
 
     // Create a Intent send by the notification
@@ -135,47 +172,18 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
 
-    // Create GoogleApiClient instance
-    public void createGoogleApi(){
-        Log.d("History", "createGoogleApi()");
-        if ( client == null ) {
-            client = new GoogleApiClient.Builder( this )
-                    .addConnectionCallbacks( this )
-                    .addOnConnectionFailedListener( this )
-                    .addApi( LocationServices.API )
-                    .build();
-
-        }
-     //   if(!client.isConnected())
-       // client.connect();
-
-    }
 
 
-    // Call GoogleApiClient connection when starting the Activity
-    @Override
-    protected void onStart() {
-        super.onStart();
-       // client.connect();
-    }
 
 
-    // Disconnect GoogleApiClient when stopping Activity
-    @Override
-    protected void onStop() {
-        super.onStop();
-        //client.disconnect();
-    }
+
+
 
 
     Circle circle;
     Marker marker;
     @Override
     public void onMapReady(GoogleMap googleMap) {
-
-        Log.d("History", "onMapReady()");
-
-        mMap = googleMap;
 
         mMap = googleMap;
         mMap.setMyLocationEnabled(true);
@@ -191,8 +199,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             params.setMargins(0,40,0,150);
         }
         LocationRequest request=LocationRequest.create();
-        request.setInterval(10000);
-        request.setFastestInterval(5000);
+        request.setInterval(50000);
+        request.setFastestInterval(10000);
         request.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
         LocationSettingsRequest.Builder builder=new LocationSettingsRequest.Builder().addLocationRequest(request);
@@ -210,12 +218,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         if(task.isSuccessful())
                         {
                             lastLoc=task.getResult();
-                            if(lastLoc!=null)
-                                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastLoc.getLatitude(),lastLoc.getLongitude()),17));
+                            if(lastLoc!=null) {
+                                LatLng myLatLng = new LatLng(lastLoc.getLatitude(), lastLoc.getLongitude());
+
+                                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myLatLng, 17));
+                               // markerForGeo(myLatLng);
+                            }
                             else{
                                 LocationRequest req=LocationRequest.create();
                                 req.setInterval(50000);
-                                req.setFastestInterval(20000);
+                                req.setFastestInterval(10000);
                                 req.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
 
                                 locCallback=new LocationCallback(){
@@ -225,7 +237,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                         if(locationResult==null)
                                             return;
                                         lastLoc=locationResult.getLastLocation();
-                                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastLoc.getLatitude(),lastLoc.getLongitude()),17));
+                                        LatLng myLatLng = new LatLng(lastLoc.getLatitude(), lastLoc.getLongitude());
+                                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myLatLng,17));
+                                      //  markerForGeo(myLatLng);
+
+                                        //markerForCurrent(myLatLng);
+
                                     }
                                 };
 
@@ -262,26 +279,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     }
 
-    @Override
-    public void onLocationChanged(Location location) {
-        //Log.d("History", "onLocationChanged ["+location+"]");
-
-      //  lastLoc = location;
-       // writeActualLocation(location);
-
-//
-
-
-    }
-
-    // Write location coordinates on UI
-    private void writeActualLocation(Location location) {
-       // markerLocation(new LatLng(location.getLatitude(), location.getLongitude()));
-    }
-
     // create location marker
     private void markerLocation(LatLng latLng){
-        Log.i("History", "markerLocation("+latLng+")");
+        Log.i("VisitPalestine", "markerLocation("+latLng+")");
         String title = latLng.latitude + ", " + latLng.longitude;
         MarkerOptions markerOptions =  new MarkerOptions()
                 .position(latLng)
@@ -294,7 +294,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
 
             locationMarker = mMap.addMarker(markerOptions);
-            CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 14f);
+            CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 15);
             mMap.animateCamera(cameraUpdate);
         }
     }
@@ -302,16 +302,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        Log.i("History", "onConnected()");
+        Log.i("VisitPalestine", "onConnected()");
 
         getLastKnownLocation();
     }
 
     // Get last known location
     private void getLastKnownLocation(){
-        Log.d("History", "getLastKnownLocation()");
+        Log.d("VisitPalestine", "getLastKnownLocation()");
 
-        if (checkPermission()){
+
             LocationServices.getFusedLocationProviderClient(this).getLastLocation().addOnSuccessListener(new OnSuccessListener<Location>() {
                 @Override
                 public void onSuccess(Location location) {
@@ -319,29 +319,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
             });
             if (lastLoc != null){
-                Log.i("History", "LasKnown location. " +
+                Log.i("VisitPalestine", "LasKnown location. " +
                         "Long: " + lastLoc.getLongitude() +
                         " | Lat: " + lastLoc.getLatitude());
 
-             //   writelastLoc();
                 startLocationUpdates();
             }else {
-                Log.w("History", "No location retrieved yet");
+                Log.w("VisitPalestine", "No location retrieved yet");
                 startLocationUpdates();
             }
 
-        }else{
-            askPermission();
-        }
+
     }
 
     // start location update
     private void startLocationUpdates() {
-        Log.i("History", "startLocationUpdates()");
+        Log.i("VisitPalestine", "startLocationUpdates()");
         locationRequest = LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-                .setInterval(UPDATE_INTERVAL)
-                .setFastestInterval(FASTEST_INTERVAL);
+                .setInterval(50000)
+                .setFastestInterval(10000);
 
         if (checkPermission()){
             LocationServices.getFusedLocationProviderClient(this).requestLocationUpdates(locationRequest,createGeofencePendingIntent());
@@ -349,61 +346,51 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    private void writelastLoc() {
-       // writeActualLocation(lastLoc);
-    }
-
     @Override
     public void onConnectionSuspended(int i) {
-        Log.w("History", "onConnectionSuspended()");
 
 
     }
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-        Log.w("History", "onConnectionFailed()");
 
     }
 
     // called when click on any part of map
     @Override
     public void onMapClick(LatLng latLng) {
-        Log.d("History", "onMapClick("+latLng +")");
 
-        markerForGeofence(latLng);
 
     }
 
-    // create marker for Geofence creation
-    private void markerForGeofence(LatLng latLng){
-        Log.i("History", "markerForGeofence("+latLng+")");
+    private void markerForGeo(LatLng alaLat){
 
-        String title = latLng.latitude + ", " + latLng.longitude;
+        String title = alaLat.latitude + ", " + alaLat.longitude;
 
         // define marker option
         MarkerOptions markerOptions = new MarkerOptions()
-                .position(latLng)
+                .position(alaLat)
                 .title(title)
-                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_CYAN));
+                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET));
 
-        if (mMap != null){
-            // remove the last geoFenceMarker
-            if (geoFenceMarker != null){
+        if (mMap != null) {
+            //  remove the last geoFenceMarker
+            if (geoFenceMarker != null) {
                 geoFenceMarker.remove();
             }
 
             geoFenceMarker = mMap.addMarker(markerOptions);
+
+
         }
-
-
 
     }
 
     // called when Marker is touched
     @Override
     public boolean onMarkerClick(Marker marker) {
-        Log.d("History", "onMarkerClickListener: " + marker.getPosition() );
+        Log.d("VisitPalestine", "onMarkerClickListener: " + marker.getPosition() );
         return false;
     }
 
@@ -416,28 +403,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     // create geoFence
     private Geofence createGeofence(LatLng latLng, float radius){
-        Log.d("History", "createGeofence");
 
         Geofence geofence =new Geofence.Builder()
-                .setRequestId(GEOFENCE_REQ_ID)
-                .setCircularRegion(32.225229,35.241456, radius)
-                .setExpirationDuration(GEO_DURATION)
+                .setRequestId("My GEO")
+                .setCircularRegion(31.906051,35.212643, 700)
+                .setExpirationDuration(Geofence.NEVER_EXPIRE)
                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER
                         | Geofence.GEOFENCE_TRANSITION_EXIT)
                 .build();
-        Toast.makeText(MapsActivity.this,"AAA2222",Toast.LENGTH_LONG).show();
+       // Toast.makeText(MapsActivity.this,"AAA2222",Toast.LENGTH_LONG).show();
 
         return geofence;
     }
 
     // create geoFence request
     private GeofencingRequest createGeoFenceRequest(Geofence geofence){
-        Log.d("History", "createGeofenceRequest");
         GeofencingRequest geofencingRequest=new GeofencingRequest.Builder()
                 .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
                 .addGeofence(geofence)
                 .build();
-        Toast.makeText(MapsActivity.this,"AAA3333",Toast.LENGTH_LONG).show();
+      //  Toast.makeText(MapsActivity.this,"AAA3333",Toast.LENGTH_LONG).show();
 
         return geofencingRequest;
     }
@@ -445,29 +430,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     // Add the created GeofenceRequest to the device's monitoring list
     private void addGeofence(GeofencingRequest request){
-        Log.d("History", "addGeofence");
         //if(!client.isConnected())
           //  client.connect();
         if (checkPermission()){
             LocationServices.getGeofencingClient(this).addGeofences(request,createGeofencePendingIntent());
-            Toast.makeText(MapsActivity.this, "AAA4444", Toast.LENGTH_SHORT).show();
+           // Toast.makeText(MapsActivity.this, "AAA4444", Toast.LENGTH_SHORT).show();
        //     LocationServices.GeofencingApi.addGeofences(client,request,createGeofencePendingIntent()).setResultCallback(this);
         }
     }
 
     @Override
     public void onResult(@NonNull Status status) {
-        Log.i("History", "onResult: " + status);
+        Log.i("VisitPalestine", "onResult: " + status);
         if (status.isSuccess()){
             drawGeofence();
         }else{
-            // inform about fail
         }
     }
 
     // draw geofence circle on google map
     private void drawGeofence(){
-        Log.d("History", "drawGeofence()");
 
         if (geoFenceLimits != null){
             geoFenceLimits.remove();
@@ -475,9 +457,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
        CircleOptions circleOptions = new CircleOptions()
              .center(geoFenceMarker.getPosition())
-              .strokeColor(Color.argb(50, 70,70,70))
-               .fillColor(Color.argb(100, 150,150,150))
-               .radius(GEOFENCE_RADIUS);
+               .fillColor(Color.argb(100, 135,39,154))
+               .radius(700);
 
        geoFenceLimits = mMap.addCircle(circleOptions);
     }
@@ -496,32 +477,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }*/
 
     // Start Geofence creation process
-    private void startGeofence(){
-        Log.i("History", "startGeofence");
+    private void startGeofence(LatLng latLng){
 
        // if (geoFenceMarker != null){
-            Geofence geofence = createGeofence(new LatLng(32.225229,35.241456), GEOFENCE_RADIUS);
+
+        Geofence geofence = createGeofence(latLng, 700);
             GeofencingRequest geofencingRequest = createGeoFenceRequest(geofence);
             addGeofence(geofencingRequest);
-            Toast.makeText(getApplicationContext(),"AAAAAAAAA",Toast.LENGTH_LONG).show();
+        markerForGeo(latLng);
 
-       // }else {
-         //   Log.e("History", "Geofence marker is null");
-           // Toast.makeText(getApplicationContext(),"Null",Toast.LENGTH_LONG).show();
+        //  Toast.makeText(getApplicationContext(),"AAAAAAAAA",Toast.LENGTH_LONG).show();
 
-        //}
+
     }
 
 
  /*   public void startGeofence(View view) {
-        Log.i("History", "startGeofence()");
+        Log.i("VisitPalestine", "startGeofence()");
 
         if (geoFenceMarker != null){
             Geofence geofence = createGeofence(geoFenceMarker.getPosition(), GEOFENCE_RADIUS);
             GeofencingRequest geofencingRequest = createGeoFenceRequest(geofence);
             addGeofence(geofencingRequest);
         }else {
-            Log.e("History", "Geofence marker is null");
+            Log.e("VisitPalestine", "Geofence marker is null");
         }
     }*/
 
@@ -533,7 +512,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     // we use PendingIntent object to call Intent service
     private PendingIntent createGeofencePendingIntent(){
-        Log.d("History", "createGeofencePendingIntent");
+        Log.d("VisitPalestine", "createGeofencePendingIntent");
 
         if (geoFencePendingIntent != null){
             return geoFencePendingIntent;
@@ -541,9 +520,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         Intent intent = new Intent(MapsActivity.this, MyIntentService.class);
         PendingIntent pendingIntent=PendingIntent.getService(
-                this, GEOFENCE_REQ_CODE, intent, PendingIntent.FLAG_ONE_SHOT
+                this, 0, intent, PendingIntent.FLAG_ONE_SHOT
         );
-        Toast.makeText(getApplicationContext(),"AAAA5555",Toast.LENGTH_LONG).show();
+       // Toast.makeText(getApplicationContext(),"AAAA5555",Toast.LENGTH_LONG).show();
 
         return pendingIntent;
     }
@@ -556,7 +535,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     // check the permission to access to location
     private boolean checkPermission(){
-        Log.d("History", "checkPermission");
+        Log.d("VisitPalestine", "checkPermission");
         // Ask for permission if it wasn't granted yet
         return (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED );
@@ -564,12 +543,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     // Ask for permission
     private void askPermission(){
-        Log.d("History", "askPermission()");
+        Log.d("VisitPalestine", "askPermission()");
 
         ActivityCompat.requestPermissions(
                 this,
                 new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                REQ_PERMISSION
+                27
         );
     }
 
@@ -577,11 +556,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     // Verify user's response of the permission requested
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        Log.d("History", "onRequestPermissionsResult()");
+        Log.d("VisitPalestine", "onRequestPermissionsResult()");
 
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         switch ( requestCode ) {
-            case REQ_PERMISSION: {
+            case 27: {
                 if ( grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED ){
                     // Permission granted
@@ -597,7 +576,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     }
 
     private void permissionsDenied() {
-        Log.w("History", "permissionsDenied()");
+        Log.w("VisitPalestine", "permissionsDenied()");
     }
 
 

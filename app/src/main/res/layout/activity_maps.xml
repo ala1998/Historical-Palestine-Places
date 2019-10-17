@@ -16,18 +16,17 @@
         app:layout_constraintRight_toRightOf="parent"
       />
 <LinearLayout
-    android:layout_margin="20dp"
-    android:layout_width="wrap_content"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content">
-    <!--
+
     <SearchView
         android:id="@+id/search"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:queryHint="Search a place"
-        android:background="@color/colorAccent">
+        android:background="#87279A">
     </SearchView>
-    -->
+
  <!--   <Button
         android:id="@+id/geofence_switch"
         android:layout_width="wrap_content"
