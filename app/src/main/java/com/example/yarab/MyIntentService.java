@@ -13,6 +13,7 @@ import android.location.Geocoder;
 import android.location.Location;
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.ResultReceiver;
 import android.text.TextUtils;
 import android.util.Log;
@@ -29,12 +30,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import static com.example.yarab.MapsActivity.player;
+
+//import static com.example.yarab.MapsActivity.player;
+
 public class MyIntentService extends IntentService {
 
 
     public static final int GEOFENCE_NOTIFICATION_ID = 0;
     private Location triggerLocation;
     private int id=-1;
+    private  ArrayList<String> triggeringGeofencesList;
     public MyIntentService() {
         super("MyIntentService");
     }
@@ -55,6 +61,7 @@ public class MyIntentService extends IntentService {
 
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
+        Toast.makeText(getApplicationContext(),"IntentService1",Toast.LENGTH_LONG).show();
 
         // Retrieve the Geofencing intent
         GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
@@ -63,15 +70,15 @@ public class MyIntentService extends IntentService {
         if (geofencingEvent.hasError()) {
 
             String errorMsg = getErrorString(geofencingEvent.getErrorCode());
-            Log.e("MyIntentService", errorMsg);
             return;
         }
 
         // Retrieve GeofenceTrasition
         int geoFenceTransition = geofencingEvent.getGeofenceTransition();
         // Check if the transition type
-        if (geoFenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER ||
-                geoFenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
+        if (geoFenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER ){
+            Toast.makeText(getApplicationContext(),"ALLu2a",Toast.LENGTH_LONG).show();
+
             // Get the geofence that were triggered
              //triggerLocation= geofencingEvent.getTriggeringLocation();
             List<Geofence> triggeringGeofences = geofencingEvent.getTriggeringGeofences();
@@ -87,23 +94,28 @@ public class MyIntentService extends IntentService {
     // Create a detail message with Geofences received
     private String getGeofenceTrasitionDetails(int geoFenceTransition, List<Geofence> triggeringGeofences) {
         // get the ID of each geofence triggered
-        ArrayList<String> triggeringGeofencesList = new ArrayList<>();
+        triggeringGeofencesList = new ArrayList<>();
         for (Geofence geofence : triggeringGeofences) {
            triggeringGeofencesList.add(geofence.getRequestId());
        }
-    for(int i=0;i<triggeringGeofencesList.size();i++)
+   /* for(int i=0;i<triggeringGeofencesList.size();i++)
         {
-            if(triggeringGeofences.get(i).getRequestId().equals("BLUE"))
-               id=R.raw.blue;
+            if(((triggeringGeofences.get(i)).getRequestId()).equals("BLUE"))
+               id=0;
             else
-            if(triggeringGeofences.get(i).getRequestId().equals("RAMALLAH"))
-                id=R.raw.ramallah;
+            if(((triggeringGeofences.get(i)).getRequestId()).equals("RAMALLAH"))
+                id=1;
             else
-            if(triggeringGeofences.get(i).getRequestId().equals("RAFEDIA"))
-                id=R.raw.rafedia;
-
+            if(((triggeringGeofences.get(i)).getRequestId()).equals("RAFEEDIA"))
+                id=2;
+            else
+            if(((triggeringGeofences.get(i)).getRequestId()).equals("HOSPITAL"))
+                id=3;
+            else
+            if(((triggeringGeofences.get(i)).getRequestId()).equals("YABAD"))
+                id=4;
         }
-        String status = null;
+*/        String status = null;
         if (geoFenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER)
             status = "Entering ";
         else if (geoFenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT)
@@ -126,12 +138,14 @@ public class MyIntentService extends IntentService {
         PendingIntent notificationPendingIntent = stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
 
         // Creating and sending Notification
-        NotificationManager notificatioMng =
+        /*NotificationManager notificatioMng =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         notificatioMng.notify(
                 GEOFENCE_NOTIFICATION_ID,
                 createNotification(msg, notificationPendingIntent));
-        Toast.makeText(getApplicationContext(),"DDDDDDDD",Toast.LENGTH_LONG).show();
+          */      //TODO: Do Sth. when clicking on noti
+        //   Notification n=createNotification(msg,notificationPendingIntent);
+        Toast.makeText(getApplicationContext(),"IntentService3",Toast.LENGTH_LONG).show();
 
         playMusic();
     }
@@ -152,7 +166,12 @@ public class MyIntentService extends IntentService {
     }
 
     private void playMusic(){
-       int audio=-1;
+        if(player!=null && player.isPlaying())
+            player.stop();
+        //TODO: Take audio from json without if conditions
+        int audio=getResources().getIdentifier(triggeringGeofencesList.get(0).toLowerCase(),"raw",getPackageName());
+        Toast.makeText(getApplicationContext(),audio,Toast.LENGTH_LONG).show();
+        /*  int audio=-1;
         if(id==0)
              audio=R.raw.blue;
         else
@@ -161,10 +180,31 @@ public class MyIntentService extends IntentService {
         else
         if(id==2)
             audio=R.raw.rafedia;
-        if(id!=-1) {
-            MediaPlayer player = MediaPlayer.create(this, audio);
-            player.setLooping(false);
-            player.start();
-        }
+        else
+            if(id==3)
+                audio=R.raw.hospital;
+        else
+            if(id==4)
+                audio=R.raw.yabad;
+        if(id!=-1) {*/
+       /*     Handler mHandler = new Handler(getMainLooper());
+            final int finalAudio = audio;
+            mHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    //Put mediaplayer and its methods here
+                    player=MediaPlayer.create(getApplicationContext(), finalAudio);
+                    player.setLooping(false);
+                    player.start();
+                }
+            });*/
+            player=MediaPlayer.create(this, audio);
+           player.setLooping(false);
+            if(player!=null && !player.isPlaying())
+            {
+                player.start();
+                Toast.makeText(getApplicationContext(),"Geofence",Toast.LENGTH_LONG).show();
+            }
+        //}
     }
 }

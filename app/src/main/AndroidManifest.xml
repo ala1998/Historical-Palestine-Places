@@ -11,6 +11,7 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.INTERNETT" />
 
+    <!--TODO: Change App Icon-->
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -57,19 +58,7 @@
             android:allowBackup="true"
             android:permission="android.permission.BIND_JOB_SERVICE" />
 
-        <service
-            android:name=".MyIntentService2"
-            android:exported="true"
-            android:allowBackup="true"
-            android:permission="android.permission.BIND_JOB_SERVICE" />
-
-        <service
-            android:name=".MyIntentService3"
-            android:exported="true"
-            android:allowBackup="true"
-            android:permission="android.permission.BIND_JOB_SERVICE" />
-
-    <!--    <receiver
+        <!--    <receiver
             android:name=".GeoBroadcastReceiver"
             android:enabled="true"
             android:exported="true" />-->
