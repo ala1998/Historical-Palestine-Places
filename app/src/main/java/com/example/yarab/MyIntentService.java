@@ -44,7 +44,7 @@ public class MyIntentService extends IntentService {
     public MyIntentService() {
         super("MyIntentService");
     }
-
+    public static String currentTitle="";
     // Handle errors
     private static String getErrorString(int errorCode) {
         switch (errorCode) {
@@ -171,7 +171,7 @@ public class MyIntentService extends IntentService {
             if(player.isPlaying())
             player.stop();
         int audio=getResources().getIdentifier(triggeringGeofencesList.get(0).toLowerCase(),"raw",getPackageName());
-
+//        currentTitle=triggeringGeofencesList.get(0);
 //                Toast.makeText(getApplicationContext(),audio,Toast.LENGTH_LONG).show();
         /*  int audio=-1;
         if(id==0)
