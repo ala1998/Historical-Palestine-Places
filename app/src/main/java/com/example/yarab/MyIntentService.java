@@ -61,7 +61,8 @@ public class MyIntentService extends IntentService {
 
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
-        Toast.makeText(getApplicationContext(),"IntentService1",Toast.LENGTH_LONG).show();
+//        Toast.makeText(getApplicationContext(),"IntentService1",Toast.LENGTH_LONG).show();
+        Toast.makeText(getApplicationContext(),"Allu2a",Toast.LENGTH_LONG).show();
 
         // Retrieve the Geofencing intent
         GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
@@ -77,7 +78,7 @@ public class MyIntentService extends IntentService {
         int geoFenceTransition = geofencingEvent.getGeofenceTransition();
         // Check if the transition type
         if (geoFenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER ){
-            Toast.makeText(getApplicationContext(),"ALLu2a",Toast.LENGTH_LONG).show();
+//            Toast.makeText(getApplicationContext(),"ALLu2a",Toast.LENGTH_LONG).show();
 
             // Get the geofence that were triggered
              //triggerLocation= geofencingEvent.getTriggeringLocation();
@@ -86,7 +87,7 @@ public class MyIntentService extends IntentService {
             String geofenceTransitionDetails = getGeofenceTrasitionDetails(geoFenceTransition, triggeringGeofences);
             // Send notification details as a String
             sendNotification(geofenceTransitionDetails);
-            Toast.makeText(getApplicationContext(),"BBBBBBB",Toast.LENGTH_LONG).show();
+//            Toast.makeText(getApplicationContext(),"BBBBBBB",Toast.LENGTH_LONG).show();
 
         }
     }
@@ -120,7 +121,7 @@ public class MyIntentService extends IntentService {
             status = "Entering ";
         else if (geoFenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT)
             status = "Exiting ";
-        Toast.makeText(getApplicationContext(),"CCCCCCC",Toast.LENGTH_LONG).show();
+//        Toast.makeText(getApplicationContext(),"CCCCCCC",Toast.LENGTH_LONG).show();
 
         return status + TextUtils.join(", ", triggeringGeofencesList);
     }
@@ -145,7 +146,7 @@ public class MyIntentService extends IntentService {
                 createNotification(msg, notificationPendingIntent));
           */      //TODO: Do Sth. when clicking on noti
         //   Notification n=createNotification(msg,notificationPendingIntent);
-        Toast.makeText(getApplicationContext(),"IntentService3",Toast.LENGTH_LONG).show();
+//        Toast.makeText(getApplicationContext(),"IntentService3",Toast.LENGTH_LONG).show();
 
         playMusic();
     }
@@ -166,11 +167,12 @@ public class MyIntentService extends IntentService {
     }
 
     private void playMusic(){
-        if(player!=null && player.isPlaying())
+        if(player!=null)
+            if(player.isPlaying())
             player.stop();
-        //TODO: Take audio from json without if conditions
         int audio=getResources().getIdentifier(triggeringGeofencesList.get(0).toLowerCase(),"raw",getPackageName());
-        Toast.makeText(getApplicationContext(),audio,Toast.LENGTH_LONG).show();
+
+//                Toast.makeText(getApplicationContext(),audio,Toast.LENGTH_LONG).show();
         /*  int audio=-1;
         if(id==0)
              audio=R.raw.blue;
@@ -200,11 +202,11 @@ public class MyIntentService extends IntentService {
             });*/
             player=MediaPlayer.create(this, audio);
            player.setLooping(false);
-            if(player!=null && !player.isPlaying())
-            {
+            if(player!=null)
+                 if(!player.isPlaying())
                 player.start();
-                Toast.makeText(getApplicationContext(),"Geofence",Toast.LENGTH_LONG).show();
-            }
+//                Toast.makeText(getApplicationContext(),"Geofence",Toast.LENGTH_LONG).show();
+
         //}
     }
 }

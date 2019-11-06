@@ -1,9 +1,11 @@
 package com.example.yarab;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.core.view.ViewGroupCompat;
 import androidx.fragment.app.FragmentActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -29,6 +31,7 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.media.MediaPlayer;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -71,6 +74,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
@@ -94,13 +98,15 @@ public  class MapsActivity extends FragmentActivity implements OnMapReadyCallbac
     private GoogleApiClient client;
     private LocationRequest locationRequest;
     private GoogleMap mMap;
-    private boolean flag=false;
+    private int flag=-1;
     private LocationCallback locCallback;
     private Location lastLoc;
     private GeofencingClient geofencingClient;
     private SearchView searchView;
     public static MediaPlayer player;
   //  private Circle geoFenceLimits;
+    private ImageView imageView;
+    private View myView=null;
 
     private ArrayList<Geofence> geofenceList;
     ArrayList<Geo> geos;
@@ -259,13 +265,17 @@ public  class MapsActivity extends FragmentActivity implements OnMapReadyCallbac
                             lastLoc=task.getResult();
                             if(lastLoc!=null) {
                                 LatLng myLatLng = new LatLng(lastLoc.getLatitude(), lastLoc.getLongitude());
-                               //TODO: Change this to CAR icon
-                                Bitmap bitmap=BitmapFactory.decodeResource(getResources(),R.drawable.play);
+
+//                                Bitmap bitmap=BitmapFactory.decodeResource(getResources(),R.drawable.ic_car2);
+                                Bitmap bitmap=getBitmapFromVectorDrawable(MapsActivity.this,R.drawable.ic_car2);
                                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myLatLng, 14));
                                 MarkerOptions myMarker = new MarkerOptions()
                                   .position(myLatLng)
+
                                 .icon(BitmapDescriptorFactory.fromBitmap(bitmap));
                                 mMap.addMarker(myMarker);
+//                               Marker marker= mMap.addMarker(myMarker);
+//                               marker.showInfoWindow();
                               //  if(geofenceList!=null && !geofenceList.isEmpty())
                                  //   startGeofence(geofenceList);
 
@@ -285,7 +295,15 @@ public  class MapsActivity extends FragmentActivity implements OnMapReadyCallbac
                                             return;
                                         lastLoc=locationResult.getLastLocation();
                                         LatLng myLatLng = new LatLng(lastLoc.getLatitude(), lastLoc.getLongitude());
+                                        Bitmap bitmap=getBitmapFromVectorDrawable(MapsActivity.this,R.drawable.ic_car2);
                                         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myLatLng,14));
+                                        MarkerOptions myMarker = new MarkerOptions()
+                                                .position(myLatLng)
+
+                                                .icon(BitmapDescriptorFactory.fromBitmap(bitmap));
+                                        mMap.addMarker(myMarker);
+//                                        Marker marker=mMap.addMarker(myMarker);
+//                                        marker.showInfoWindow();
                                         if(geofenceList!=null && !geofenceList.isEmpty())
                                             startGeofence(geofenceList);
                                         Toast.makeText(MapsActivity.this,"Start from location",Toast.LENGTH_LONG).show();
@@ -404,24 +422,38 @@ public  class MapsActivity extends FragmentActivity implements OnMapReadyCallbac
                  //       "Long: " + lastLoc.getLongitude() +
                    //     " | Lat: " + lastLoc.getLatitude());
 
-                startLocationUpdates();
+                startLocationUpdates(lastLoc);
             }else {
               //  Log.w("VisitPalestine", "No location retrieved yet");
-                startLocationUpdates();
+                startLocationUpdates(lastLoc);
             }
 
 
     }
 
     // start location update
-    private void startLocationUpdates() {
+    private void startLocationUpdates(Location location) {
         Log.i("VisitPalestine", "startLocationUpdates()");
         locationRequest = LocationRequest.create()
                 .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
                 .setInterval(50000)
                 .setFastestInterval(10000);
-    if(geofenceList!=null && !geofenceList.isEmpty())
-       startGeofence(geofenceList);
+        if(location!=null){
+            LatLng latLng= new LatLng(location.getLatitude(),location.getLongitude());
+            Bitmap bitmap=getBitmapFromVectorDrawable(MapsActivity.this,R.drawable.ic_car2);
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 14));
+            MarkerOptions myMarker = new MarkerOptions()
+                    .position(latLng)
+                    .icon(BitmapDescriptorFactory.fromBitmap(bitmap));
+            mMap.addMarker(myMarker);
+
+        }
+        if (geofenceList != null && !geofenceList.isEmpty())
+        {
+            startGeofence(geofenceList);
+            Toast.makeText(this,"ALA",Toast.LENGTH_LONG).show();
+
+        }
       //  if (checkPermission()){
            // LocationServices.getFusedLocationProviderClient(this).requestLocationUpdates(locationRequest,createGeofencePendingIntent());
           //  LocationServices.FusedLocationApi.requestLocationUpdates(client, locationRequest, this);
@@ -567,6 +599,9 @@ public  class MapsActivity extends FragmentActivity implements OnMapReadyCallbac
          //   if(checkPermission()) {
                 GeofencingRequest geofencingRequest = createGeoFenceRequest(geofenceList);
                 LocationServices.getGeofencingClient(this).addGeofences(geofencingRequest, createGeofencePendingIntent());
+//        Toast.makeText(getApplicationContext(),"AAAAAAAAA",Toast.LENGTH_LONG).show();
+
+        //
         //    }
 
         //        Toast.makeText(this, "start geofence", Toast.LENGTH_LONG).show();
@@ -614,29 +649,9 @@ public  class MapsActivity extends FragmentActivity implements OnMapReadyCallbac
                 .strokeColor(Color.argb(50, 70, 70, 70))
                 .fillColor(Color.argb(100, 150, 150, 150))
                 .strokeWidth(5.0f);
-        Bitmap m=BitmapFactory.decodeResource(this.getResources(), R.drawable.play);
+//        Bitmap m=BitmapFactory.decodeResource(this.getResources(), R.drawable.play);
 //        Canvas canvas = new Canvas(m);
       //  canvas.drawText("CITY", 0, 50,new Paint()); // paint defines the text color, stroke width, size
-
-        MarkerOptions markerOptions=new MarkerOptions()
-                .position(latLng)
-                .title(requestID)
-                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET))
-               // .icon(BitmapDescriptorFactory.fromBitmap(writeTextOnDrawable(R.drawable.play, "your text goes here")))
-                .snippet(desc+" Play for more info!");
-        mMap.addCircle(circleOptions);
-        mMap.addMarker(markerOptions);
-        //Marker marker=mMap.addMarker(markerOptions);
-        //marker.showInfoWindow();
-        //if(!marker.isInfoWindowShown())
-          //  marker.showInfoWindow();
-        //else
-          //  marker.hideInfoWindow();
-        if(geofenceList!=null && !geofenceList.isEmpty()) {
-            startGeofence(geofenceList);
-     //   Toast.makeText(MapsActivity.this,"ALA",Toast.LENGTH_LONG).show();
-        }// Toast.makeText(MapsActivity.this,"After Creating",Toast.LENGTH_LONG).show();
-
         mMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
             @Override
             public View getInfoWindow(Marker marker) {
@@ -644,38 +659,45 @@ public  class MapsActivity extends FragmentActivity implements OnMapReadyCallbac
             }
 
             @Override
-            public View getInfoContents(final Marker marker) {
+            public View getInfoContents( Marker marker) {
 
 
                 LinearLayout info = new LinearLayout(MapsActivity.this);
                 info.setOrientation(LinearLayout.VERTICAL);
                 LinearLayout horiz=new LinearLayout(MapsActivity.this);
                 horiz.setOrientation(LinearLayout.HORIZONTAL);
-                ImageView imageView=new ImageView(MapsActivity.this);
-                imageView.setImageResource(R.drawable.play);
+                imageView=new ImageView(MapsActivity.this);
+                imageView.setTag("MyImage");
+                if(flag==1)
+                    imageView.setImageResource(R.drawable.ic_pause);
+                else if(flag==0)
+                    imageView.setImageResource(R.drawable.ic_play);
+                else
+                    imageView.setImageResource(R.drawable.ic_play);
+
                 imageView.setPadding(20,20,20,20);
                 //LinearLayout linearLayout=findViewById(R.id.layout);
 
                 //ImageView imageView=findViewById(R.id.myPlay);
                 //linearLayout.removeView(imageView);
 
-              //   imageView.setVisibility(View.VISIBLE);
-               // imageView.setImageResource(R.drawable.play);
+                //   imageView.setVisibility(View.VISIBLE);
+                // imageView.setImageResource(R.drawable.play);
                 //imageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
-               // imageView.requestLayout();
-               // LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(2,2);
-             //   imageView.setLayoutParams(params);
-               // imageView.getLayoutParams().width=2;
-         //       imageView.setMaxWidth(5);
-           //     imageView.setMaxHeight(5);
-             //   imageView.setScaleX(0.9f);
-               // imageView.setScaleY(0.9f);
+                // imageView.requestLayout();
+                // LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(2,2);
+                //   imageView.setLayoutParams(params);
+                // imageView.getLayoutParams().width=2;
+                //       imageView.setMaxWidth(5);
+                //     imageView.setMaxHeight(5);
+                //   imageView.setScaleX(0.9f);
+                // imageView.setScaleY(0.9f);
 
-            imageView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                //TODO: How to enter this method
-                public void onClick(View v) {
-                    Toast.makeText(MapsActivity.this,"OnClick",Toast.LENGTH_LONG).show();
+                imageView.setOnClickListener(new View.OnClickListener() {
+                    //Why doesn't enter here
+                    @Override
+                    public void onClick(View v) {
+                 /*   Toast.makeText(MapsActivity.this,"OnClick",Toast.LENGTH_LONG).show();
                     if(flag==true)
                     {
                         if(player!=null)
@@ -696,15 +718,15 @@ public  class MapsActivity extends FragmentActivity implements OnMapReadyCallbac
                     player.setLooping(false);
                     player.start();
                     flag=true;
-                }
-            });
+               */ }
+                });
                 //LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) imageView.getLayoutParams();
                 //params.width = 20;
                 //imageView.setLayoutParams(params);
                 TextView title = new TextView(MapsActivity.this);
                 title.setTextColor(Color.BLACK);
                 title.setPadding(10,20,20,20);
-              //  title.setGravity(Gravity.CENTER_VERTICAL);
+                //  title.setGravity(Gravity.CENTER_VERTICAL);
                 title.setTypeface(null, Typeface.BOLD);
                 title.setText(marker.getTitle());
                 horiz.addView(imageView);
@@ -723,67 +745,106 @@ public  class MapsActivity extends FragmentActivity implements OnMapReadyCallbac
                 //horiz.removeView(imageView);
 
                 //linearLayout.addView(imageView);
+                myView=info;
                 return info;
                 //}
             }
         });
-      /*  mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
-            @Override
-            public void onInfoWindowClick(Marker marker) {
-               //if(marker.isInfoWindowShown())
-             //  marker.hideInfoWindow();
-                //else
-                  //  marker.hideInfoWindow();
-             /*   if(flag==true)
-                {
-                if(player!=null)
-                   // if(player.isPlaying())
-                player.stop();
-                Toast.makeText(MapsActivity.this,"STOP",Toast.LENGTH_LONG).show();
-                flag=false;
-                return;
-                }
-                //if(player!=null)
-                  //  if(player.isPlaying())
-                    //player.start();
+        MarkerOptions markerOptions=new MarkerOptions()
+                .position(latLng)
+                .title(requestID)
+                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET))
+               // .icon(BitmapDescriptorFactory.fromBitmap(writeTextOnDrawable(R.drawable.play, "your text goes here")))
+                .snippet(desc+" Play for more info!");
+        mMap.addCircle(circleOptions);
+        mMap.addMarker(markerOptions);
+
+        //Marker marker=mMap.addMarker(markerOptions);
+        //marker.showInfoWindow();
+        //if(!marker.isInfoWindowShown())
+          //  marker.showInfoWindow();
+        //else
+          //  marker.hideInfoWindow();
+        if(geofenceList!=null && !geofenceList.isEmpty()) {
+            startGeofence(geofenceList);
+     //   Toast.makeText(MapsActivity.this,"ALA",Toast.LENGTH_LONG).show();
+        }// Toast.makeText(MapsActivity.this,"After Creating",Toast.LENGTH_LONG).show();
+
+       mMap.setOnInfoWindowClickListener(new GoogleMap.OnInfoWindowClickListener() {
+           @Override
+           public void onInfoWindowClick(Marker marker) {
+              // if (marker.isInfoWindowShown())
+              //     marker.hideInfoWindow();
+               //else
+                 //  marker.hideInfoWindow();
+
+               if (flag == 1) {
+                   if (player != null && player.isPlaying())
+                       // if(player.isPlaying())
+                   {
+                       player.stop();
+//                   imageView.setImageResource(R.drawable.ic_play);
+//                       ((ImageView) myView.findViewWithTag("MyImage")).setImageResource(R.drawable.ic_play);
+//                   Toast.makeText(MapsActivity.this, "STOP", Toast.LENGTH_LONG).show();
+
+                       flag = 0;
+                       marker.showInfoWindow();
+
+
+                   }
+
+                   return;
+               }
+               //if(player!=null)
+               //  if(player.isPlaying())
+               //player.start();
 //                int audio=Integer.parseInt("R.raw."+marker.getTitle().toLowerCase());
-                int audio=getResources().getIdentifier(marker.getTitle().toLowerCase(),"raw",getPackageName());
-                player = MediaPlayer.create(MapsActivity.this, audio);
-                player.setLooping(false);
-                player.start();
-                flag=true;
-               */
-                /* if(marker.getTitle().equals("BlUE"))
-                    audio=R.raw.blue;
-                else
-                if(marker.getTitle().equals("RAMALLAH"))
-                    audio=R.raw.ramallah;
-                else  if(marker.getTitle().equals("RAFEEDIA"))
-                    audio=R.raw.rafedia;
-                else  if(marker.getTitle().equals("YA'BAD"))
-                    audio=R.raw.yabad;
-                else  if(marker.getTitle().equals("HOSPITAL"))
-                    audio=R.raw.hospital;
+         else if(flag==0){
+             if(player!=null && player.isPlaying())
+                 player.stop();
+                   int audio = getResources().getIdentifier(marker.getTitle().toLowerCase(), "raw", getPackageName());
+                   player = MediaPlayer.create(MapsActivity.this, audio);
+                   player.setLooping(false);
+                   player.start();
+//                   imageView.setImageResource(R.drawable.ic_pause);
+//                   ((ImageView) myView.findViewWithTag("MyImage")).setImageResource(R.drawable.ic_pause);
 
-                if(audio!=-1){*/
-                   /* Handler mHandler = new Handler(getMainLooper());
-                    final int finalAudio=audio;
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            //Put mediaplayer and its methods here
-                            player=MediaPlayer.create(getApplicationContext(), finalAudio);
-                            player.setLooping(false);
-                            player.start();
-                        }
-                    });
+                   flag = 1;
+                   marker.showInfoWindow();
 
-                //}
+               }
+else if(player!=null)
+    if(flag==-1 && player.isPlaying())
+    {
+        player.stop();
+        int audio = getResources().getIdentifier(marker.getTitle().toLowerCase(), "raw", getPackageName());
+        player = MediaPlayer.create(MapsActivity.this, audio);
+        player.setLooping(false);
+        player.start();
+//                   imageView.setImageResource(R.drawable.ic_pause);
+//                   ((ImageView) myView.findViewWithTag("MyImage")).setImageResource(R.drawable.ic_pause);
+        flag=1;
+        marker.showInfoWindow();
 
-            }
-        });*/
-        //return geofence;
     }
+else if(player==null && flag==-1)
+    {
+        int audio = getResources().getIdentifier(marker.getTitle().toLowerCase(), "raw", getPackageName());
+        player = MediaPlayer.create(MapsActivity.this, audio);
+        player.setLooping(false);
+        player.start();
+        flag=1;
+        marker.showInfoWindow();
+    }
+
+               }
+
+        });
+               //return geofence;
+
+
+           }
+
     private void createWithoutDraw(LatLng latLng,String requestID,float r ){
         Geofence geofence =  new Geofence.Builder()
                 .setRequestId(requestID)
@@ -849,7 +910,9 @@ public  class MapsActivity extends FragmentActivity implements OnMapReadyCallbac
                 pendingIntent = PendingIntent.getService(
                         this, 1989, intent,PendingIntent.FLAG_ONE_SHOT
                 );
-      //Toast.makeText(MapsActivity.this,"After calling pending & Service",Toast.LENGTH_LONG).show();
+//        Toast.makeText(getApplicationContext(),"AAAAAAAAA",Toast.LENGTH_LONG).show();
+
+        //Toast.makeText(MapsActivity.this,"After calling pending & Service",Toast.LENGTH_LONG).show();
 
 
 
@@ -971,21 +1034,47 @@ public  class MapsActivity extends FragmentActivity implements OnMapReadyCallbac
     protected void onPause() {
         super.onPause();
         if(player!=null)
-            player.stop();
+            player.pause();
     }
 
     @Override
     protected void onRestart() {
         super.onRestart();
-        if(player!=null)
-            player.start();
+    /*    if(player!=null)
+            player.start();*/
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if(player!=null)
-            player.start();
+        /*if(player!=null)
+            player.start();*/
 
     }
+
+    public static Bitmap getBitmapFromVectorDrawable(Context context, int drawableId) {
+        Drawable drawable = ContextCompat.getDrawable(context, drawableId);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            drawable = (DrawableCompat.wrap(drawable)).mutate();
+        }
+
+        Bitmap bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(),
+                drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        drawable.draw(canvas);
+
+        return bitmap;
+    }
+  /*  private BitmapDescriptor bitmapDescriptorFromVector(Context context, @DrawableRes int vectorDrawableResourceId) {
+//        Drawable background = ContextCompat.getDrawable(context, R.drawable.ic_map_pin_filled_blue_48dp);
+//        background.setBounds(0, 0, background.getIntrinsicWidth(), background.getIntrinsicHeight());
+        Drawable vectorDrawable = ContextCompat.getDrawable(context, vectorDrawableResourceId);
+        vectorDrawable.setBounds(40, 20, vectorDrawable.getIntrinsicWidth() + 40, vectorDrawable.getIntrinsicHeight() + 20);
+        Bitmap bitmap = Bitmap.createBitmap(50, 50, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+//        background.draw(canvas);
+        vectorDrawable.draw(canvas);
+        return BitmapDescriptorFactory.fromBitmap(bitmap);
+    }*/
 }
